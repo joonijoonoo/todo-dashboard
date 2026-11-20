@@ -1102,12 +1102,12 @@
   };
 
   var SEED_TODOS = [
-    { title: "주간 업무 보고서 초안 작성", category: "work",     priority: "high",   today: true,  done: false,
+    { title: "주간 업무 보고서 초안 작성", category: "work",     priority: "high",   today: true,  done: false, dueOffset: 0,
       memo: "지난주 실적 표와 이번 주 일정은 목요일 오전까지 정리.\n팀장님 피드백 반영 후 금요일 오후에 공유하기." },
     { title: "팀 회의 준비 및 안건 정리",  category: "work",     priority: "normal", today: true,  done: false },
     { title: "저녁 30분 빠르게 걷기",      category: "health",   priority: "normal", today: true,  done: false,
       memo: "공원 한 바퀴 · 끝나고 종아리 스트레칭 5분." },
-    { title: "장보기 목록 정리하기",       category: "personal", priority: "low",    today: false, done: false },
+    { title: "장보기 목록 정리하기",       category: "personal", priority: "low",    today: false, done: false, dueOffset: 2 },
     { title: "자바스크립트 강의 1강 듣기", category: "study",    priority: "normal", today: false, done: true  }
   ];
 
@@ -1218,9 +1218,19 @@
         today: t.today,
         done: t.done,
         memo: t.memo || "",
+        dueDate: seedDueDate(t.dueOffset),
         createdAt: Date.now() - (SEED_TODOS.length - i) * 60000
       });
     }).filter(Boolean);
+  }
+
+  /* 예시 할 일의 마감일은 처음 연 날을 기준으로 잡아 언제나 자연스럽게 보이게 한다. */
+  function seedDueDate(offset) {
+    if (typeof offset !== "number" || !isFinite(offset)) return "";
+    var now = new Date();
+    var d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    d.setDate(d.getDate() + offset);
+    return dateKey(d);
   }
 
   function normalizeTodo(t) {
