@@ -1,0 +1,2818 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#f5f6f8" />
+<meta name="application-name" content="To Do" />
+<meta name="apple-mobile-web-app-title" content="To Do" />
+<meta name="description" content="마감일과 오늘 할 일을 한눈에 보는 개인 할 일 대시보드" />
+<title>To Do</title>
+<style>
+  :root{
+    --bg:#f4f6f9;
+    --bg-grad-1:#eef3ff;
+    --bg-grad-2:#f7f4ff;
+    --card:#ffffff;
+    --ink:#1a2233;
+    --ink-soft:#3d4757;
+    --muted:#78849a;
+    --line:#e8ebf1;
+    --line-soft:#f0f2f7;
+    --accent:#3b6ef6;
+    --accent-dark:#2f59c9;
+    --accent-soft:#eaf0ff;
+    --ok:#0ea36b;
+    --ok-soft:#e6f7ef;
+    --warn:#e08c14;
+    --warn-soft:#fdf3e1;
+    --danger:#e2504a;
+    --danger-soft:#fdecea;
+    --radius:16px;
+    --shadow-sm:0 1px 2px rgba(16,24,40,.05);
+    --shadow:0 1px 2px rgba(16,24,40,.04), 0 10px 28px -12px rgba(16,24,40,.16);
+    --shadow-lift:0 2px 4px rgba(16,24,40,.05), 0 18px 36px -18px rgba(16,24,40,.24);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1100px 520px at 12% -12%, var(--bg-grad-1) 0%, rgba(238,243,255,0) 62%),
+      radial-gradient(900px 480px at 92% -6%, var(--bg-grad-2) 0%, rgba(247,244,255,0) 58%),
+      var(--bg);
+    background-attachment:fixed;
+    color:var(--ink);
+    font-family:"Pretendard","Pretendard Variable",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",Roboto,"Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    font-size:15px;
+    line-height:1.5;
+    min-height:100vh;
+  }
+  button,input,select{font-family:inherit;font-size:inherit;color:inherit;}
+  button{cursor:pointer;}
+  ::placeholder{color:#a3adbf;}
+
+  .wrap{
+    width:100%;
+    max-width:980px;
+    margin:0 auto;
+    padding:34px 20px 72px;
+  }
+
+  /* ── 헤더 ─────────────────────────────── */
+  .top{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:16px;
+    margin-bottom:22px;
+  }
+  .eyebrow{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    font-size:12.5px;
+    font-weight:600;
+    letter-spacing:.02em;
+    color:var(--muted);
+    margin-bottom:8px;
+  }
+  .dot{
+    width:7px;height:7px;border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 0 3px var(--accent-soft);
+  }
+  h1{
+    margin:0;
+    font-size:26px;
+    line-height:1.25;
+    letter-spacing:-.02em;
+    font-weight:750;
+  }
+  .sub{
+    margin:6px 0 0;
+    font-size:13.5px;
+    color:var(--muted);
+  }
+  .today-chip{
+    flex:0 0 auto;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:9px 14px;
+    font-size:13px;
+    font-weight:650;
+    color:var(--ink-soft);
+    box-shadow:var(--shadow-sm);
+    white-space:nowrap;
+  }
+
+  /* ── 17:00 데드라인 ─────────────────────── */
+  .deadline{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    flex-wrap:wrap;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-left:4px solid #c9d3e3;
+    border-radius:var(--radius);
+    box-shadow:var(--shadow-sm);
+    padding:14px 16px;
+    margin-bottom:16px;
+    transition:background .2s, border-color .2s, box-shadow .2s;
+  }
+  .deadline[data-state="upcoming"]{
+    background:linear-gradient(180deg,#f6f9ff 0%,#ffffff 100%);
+    border-color:#dfe7f6;
+    border-left-color:var(--accent);
+  }
+  .deadline[data-state="overdue"]{
+    background:linear-gradient(180deg,#fff5f3 0%,#fffafa 100%);
+    border-color:#f7cfc9;
+    border-left-color:var(--danger);
+    box-shadow:0 1px 2px rgba(226,80,74,.10), 0 14px 30px -20px rgba(226,80,74,.55);
+  }
+  .deadline[data-state="done"]{
+    background:linear-gradient(180deg,#f3faf7 0%,#ffffff 100%);
+    border-color:#dcefe6;
+    border-left-color:var(--ok);
+  }
+  .deadline[data-state="none"]{
+    background:#fbfcfe;
+    border-left-color:#c9d3e3;
+  }
+  .deadline-copy{flex:1 1 230px;min-width:0;}
+  .deadline-title{
+    margin:0;
+    font-size:15px;
+    font-weight:750;
+    letter-spacing:-.012em;
+    line-height:1.35;
+    color:var(--ink);
+    word-break:keep-all;
+  }
+  .deadline[data-state="overdue"] .deadline-title{color:#bb3a31;}
+  .deadline-desc{
+    margin:4px 0 0;
+    font-size:12.8px;
+    font-weight:600;
+    color:var(--muted);
+    font-variant-numeric:tabular-nums;
+    word-break:keep-all;
+  }
+  .deadline[data-state="overdue"] .deadline-desc{color:#a3574f;}
+  .deadline-tools{display:flex;align-items:center;gap:7px;flex:0 0 auto;}
+  .deadline-tools .btn-sm{height:36px;}
+
+  .alarm-toggle{
+    height:36px;
+    padding:0 13px;
+    border-radius:10px;
+    border:1px solid var(--line);
+    background:#fff;
+    font-size:12.5px;
+    font-weight:700;
+    letter-spacing:-.01em;
+    color:#6d788c;
+    display:inline-flex;align-items:center;justify-content:center;gap:5px;
+    white-space:nowrap;
+    box-shadow:var(--shadow-sm);
+    transition:background .15s, border-color .15s, color .15s, box-shadow .15s;
+  }
+  .alarm-toggle:hover{border-color:#d8deea;color:var(--ink-soft);}
+  .alarm-toggle:focus-visible{outline:none;box-shadow:0 0 0 3.5px rgba(59,110,246,.16);}
+  .alarm-toggle.on{
+    background:var(--warn-soft);
+    border-color:#f2d9ab;
+    color:#a1700a;
+  }
+  .deadline[data-state="overdue"] .alarm-toggle.on{
+    background:#fff;
+    border-color:#f1c9c4;
+    color:#c23b35;
+  }
+  .deadline[data-state="done"] .alarm-toggle.on{
+    background:var(--ok-soft);
+    border-color:#c6ecdb;
+    color:#0a8a5b;
+  }
+
+  .deadline.firing{animation:alarmPulse 1.1s ease-in-out 5;}
+  @keyframes alarmPulse{
+    0%,100%{box-shadow:0 1px 2px rgba(226,80,74,.10), 0 14px 30px -20px rgba(226,80,74,.45);}
+    50%{box-shadow:0 0 0 5px rgba(226,80,74,.14), 0 18px 34px -16px rgba(226,80,74,.62);}
+  }
+
+  /* ── 요약 카드 ─────────────────────────── */
+  .summary{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:20px;
+    margin-bottom:18px;
+  }
+  .stats{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:12px;
+  }
+  .stat{
+    background:linear-gradient(180deg,#fbfcfe 0%,#f7f9fc 100%);
+    border:1px solid var(--line-soft);
+    border-radius:13px;
+    padding:13px 14px;
+  }
+  .stat-label{
+    display:flex;align-items:center;gap:6px;
+    font-size:12.5px;font-weight:600;color:var(--muted);
+    margin-bottom:7px;
+  }
+  .stat-label i{
+    width:6px;height:6px;border-radius:2px;display:inline-block;
+  }
+  .stat-value{
+    font-size:25px;
+    font-weight:750;
+    letter-spacing:-.02em;
+    line-height:1.1;
+    font-variant-numeric:tabular-nums;
+  }
+  .stat-value small{font-size:13px;font-weight:650;color:var(--muted);margin-left:2px;}
+
+  .progress-block{margin-top:18px;}
+  .progress-head{
+    display:flex;align-items:center;justify-content:space-between;
+    font-size:13px;font-weight:650;color:var(--ink-soft);
+    margin-bottom:9px;
+  }
+  .progress-head .rate{
+    color:var(--accent);
+    font-variant-numeric:tabular-nums;
+    font-weight:750;
+  }
+  .track{
+    position:relative;
+    height:10px;
+    border-radius:99px;
+    background:#edf0f6;
+    overflow:hidden;
+    box-shadow:inset 0 1px 2px rgba(16,24,40,.06);
+  }
+  .fill{
+    height:100%;
+    width:0%;
+    border-radius:99px;
+    background:linear-gradient(90deg,#5b8cff 0%,#3b6ef6 55%,#2f59c9 100%);
+    transition:width .45s cubic-bezier(.22,.8,.28,1);
+  }
+  .progress-note{
+    margin:9px 0 0;
+    font-size:12.5px;
+    color:var(--muted);
+  }
+
+  /* ── 입력 폼 ───────────────────────────── */
+  .panel{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:18px;
+    margin-bottom:16px;
+  }
+  .panel-title{
+    display:flex;align-items:center;gap:8px;
+    font-size:14px;font-weight:700;letter-spacing:-.01em;
+    margin:0 0 13px;
+  }
+  .panel-title svg{flex:0 0 auto;}
+
+  .add-form{display:grid;gap:11px;}
+  .field{display:flex;flex-direction:column;gap:6px;min-width:0;}
+  .field > label{
+    font-size:12px;font-weight:650;color:var(--muted);
+    letter-spacing:.01em;
+  }
+  .input{
+    width:100%;
+    height:44px;
+    padding:0 14px;
+    border:1px solid var(--line);
+    border-radius:11px;
+    background:#fcfdff;
+    transition:border-color .15s, box-shadow .15s, background .15s;
+    outline:none;
+  }
+  .input:focus{
+    border-color:#a9c0fb;
+    background:#fff;
+    box-shadow:0 0 0 3.5px rgba(59,110,246,.12);
+  }
+  .input.textarea{
+    height:auto;
+    min-height:70px;
+    padding:10px 14px;
+    line-height:1.55;
+    resize:vertical;
+    display:block;
+  }
+  .field > label .opt{
+    font-weight:600;
+    color:#a3adbf;
+  }
+  select.input{
+    appearance:none;
+    -webkit-appearance:none;
+    background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%2378849a' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;
+    background-position:right 13px center;
+    padding-right:34px;
+    cursor:pointer;
+  }
+  .add-row-1{display:grid;grid-template-columns:1fr 118px;gap:11px;}
+  .add-row-2{display:grid;grid-template-columns:1fr 1fr auto;gap:11px;align-items:end;}
+
+  .switch{
+    display:flex;align-items:center;gap:9px;
+    height:44px;
+    padding:0 14px;
+    position:relative;
+    border:1px solid var(--line);
+    border-radius:11px;
+    background:#fcfdff;
+    cursor:pointer;
+    user-select:none;
+    white-space:nowrap;
+    font-size:13.5px;
+    font-weight:600;
+    color:var(--ink-soft);
+    transition:border-color .15s, background .15s, color .15s;
+  }
+  .switch:hover{border-color:#cfd8e8;}
+  .switch input{
+    position:absolute;opacity:0;width:0;height:0;
+  }
+  .switch .box{
+    width:19px;height:19px;border-radius:6px;
+    border:1.6px solid #c4cddd;
+    background:#fff;
+    display:grid;place-items:center;
+    flex:0 0 auto;
+    transition:all .15s;
+  }
+  .switch .box svg{opacity:0;transform:scale(.6);transition:all .15s;color:#fff;}
+  .switch input:checked ~ .box{
+    background:var(--accent);
+    border-color:var(--accent);
+  }
+  .switch input:checked ~ .box svg{opacity:1;transform:scale(1);}
+  .switch input:checked ~ .box-text{color:var(--accent-dark);}
+  .switch:has(input:checked){background:var(--accent-soft);border-color:#c3d4ff;}
+  .switch input:focus-visible ~ .box{box-shadow:0 0 0 3.5px rgba(59,110,246,.16);}
+
+  .btn{
+    height:44px;
+    padding:0 20px;
+    border-radius:11px;
+    border:1px solid transparent;
+    font-weight:700;
+    font-size:14px;
+    letter-spacing:-.01em;
+    display:inline-flex;align-items:center;justify-content:center;gap:7px;
+    transition:transform .12s, box-shadow .15s, background .15s, border-color .15s, color .15s;
+    white-space:nowrap;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{
+    background:linear-gradient(180deg,#4a7bff 0%,#3567ea 100%);
+    color:#fff;
+    box-shadow:0 1px 2px rgba(47,89,201,.18), 0 10px 20px -10px rgba(53,103,234,.65);
+  }
+  .btn-primary:hover{background:linear-gradient(180deg,#3f71ff 0%,#2f5cd8 100%);}
+  .btn-ghost{
+    background:#fff;
+    border-color:var(--line);
+    color:var(--muted);
+    box-shadow:var(--shadow-sm);
+  }
+  .btn-ghost:hover{border-color:#d8deea;color:var(--ink-soft);background:#fbfcfe;}
+  .btn-ghost:disabled{opacity:.5;cursor:not-allowed;box-shadow:none;}
+
+  .form-error{
+    display:none;
+    margin-top:2px;
+    font-size:12.5px;
+    font-weight:600;
+    color:var(--danger);
+  }
+  .form-error.show{display:block;}
+
+  /* ── 필터 바 ───────────────────────────── */
+  .toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .segmented{
+    display:inline-flex;
+    padding:3px;
+    background:#eaeef5;
+    border-radius:12px;
+    gap:2px;
+    overflow:hidden;
+  }
+  .seg{
+    border:0;
+    background:transparent;
+    border-radius:9px;
+    padding:8px 14px;
+    font-size:13px;
+    font-weight:650;
+    color:#647089;
+    transition:background .15s, color .15s, box-shadow .15s;
+    white-space:nowrap;
+  }
+  .seg:hover{color:var(--ink);}
+  .seg.active{
+    background:#fff;
+    color:var(--accent-dark);
+    box-shadow:0 1px 2px rgba(16,24,40,.1), 0 2px 6px -2px rgba(16,24,40,.14);
+  }
+  .seg .cnt{
+    font-size:11.5px;
+    font-variant-numeric:tabular-nums;
+    color:#93a0b5;
+    margin-left:4px;
+    font-weight:700;
+  }
+  .seg.active .cnt{color:var(--accent);}
+
+  .spacer{flex:1 1 auto;}
+
+  .search-wrap{
+    position:relative;
+    flex:1 1 190px;
+    max-width:280px;
+    min-width:150px;
+  }
+  .search-wrap svg{
+    position:absolute;left:12px;top:50%;transform:translateY(-50%);
+    color:#9aa5b8;pointer-events:none;
+  }
+  #search{
+    width:100%;
+    height:40px;
+    padding:0 34px 0 35px;
+    border:1px solid var(--line);
+    border-radius:11px;
+    background:#fff;
+    outline:none;
+    transition:border-color .15s, box-shadow .15s;
+    font-size:13.5px;
+  }
+  #search:focus{border-color:#a9c0fb;box-shadow:0 0 0 3.5px rgba(59,110,246,.12);}
+  #search::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none;display:none;}
+  .clear-search{
+    position:absolute;right:6px;top:50%;transform:translateY(-50%);
+    width:26px;height:26px;border-radius:50%;
+    border:0;background:transparent;
+    display:none;place-items:center;color:#9aa5b8;
+  }
+  .clear-search:hover{background:#f1f4f9;color:var(--ink-soft);}
+  .clear-search.show{display:grid;}
+
+  #category-filter{
+    height:40px;
+    border-radius:11px;
+    border:1px solid var(--line);
+    background-color:#fff;
+    padding:0 32px 0 12px;
+    font-size:13px;
+    font-weight:600;
+    color:var(--ink-soft);
+    outline:none;
+    appearance:none;-webkit-appearance:none;
+    background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%2378849a' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;
+    background-position:right 11px center;
+    cursor:pointer;
+  }
+  #category-filter:focus{border-color:#a9c0fb;box-shadow:0 0 0 3.5px rgba(59,110,246,.12);}
+
+  .list-head{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:10px;
+    margin:0 2px 10px;
+  }
+  .list-count{
+    font-size:12.5px;
+    font-weight:650;
+    color:var(--muted);
+    font-variant-numeric:tabular-nums;
+  }
+
+  /* ── 할 일 목록 ─────────────────────────── */
+  .list{display:flex;flex-direction:column;gap:9px;padding:0;margin:0;list-style:none;}
+
+  .item{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:14px 15px;
+    box-shadow:var(--shadow-sm);
+    transition:box-shadow .18s, border-color .18s, background .18s, opacity .18s, transform .18s;
+  }
+  .item.is-new{animation:pop .26s cubic-bezier(.2,.8,.3,1) both;}
+  @keyframes pop{
+    from{opacity:0;transform:translateY(-4px) scale(.995);}
+    to{opacity:1;transform:none;}
+  }
+  .item:hover{box-shadow:var(--shadow);border-color:#dde3ee;}
+  .item.done{background:#fbfcfd;}
+  .item.done .item-title{color:#98a3b6;text-decoration:line-through;text-decoration-color:#c3ccda;text-decoration-thickness:1.5px;}
+  .item.removing{
+    opacity:0;
+    transform:translateX(10px) scale(.98);
+    pointer-events:none;
+  }
+  .item.due-today{border-color:#cfdffb;}
+  .item.due-today:hover{border-color:#b9d0fa;}
+  .item.due-late{border-color:#f6cfca;background:linear-gradient(180deg,#fffaf9 0%,#ffffff 72%);}
+  .item.due-late:hover{border-color:#efb3ab;}
+
+  .check{
+    flex:0 0 auto;
+    width:22px;height:22px;
+    margin-top:1px;
+    border-radius:7px;
+    border:1.7px solid #c6cfdd;
+    background:#fff;
+    display:grid;place-items:center;
+    transition:all .15s;
+    padding:0;
+  }
+  .check svg{opacity:0;transform:scale(.55);transition:all .15s;color:#fff;}
+  .check:hover{border-color:var(--ok);background:var(--ok-soft);}
+  .check:focus-visible{box-shadow:0 0 0 3.5px rgba(14,163,107,.18);outline:none;}
+  .item.done .check{background:var(--ok);border-color:var(--ok);}
+  .item.done .check svg{opacity:1;transform:scale(1);}
+
+  .item-main{flex:1 1 auto;min-width:0;}
+  .item-title{
+    font-size:14.7px;
+    font-weight:620;
+    letter-spacing:-.008em;
+    color:var(--ink);
+    word-break:break-word;
+    overflow-wrap:anywhere;
+  }
+
+  /* 메모 */
+  .item-memo{
+    margin-top:7px;
+    padding:1px 0 1px 10px;
+    border-left:2px solid #dbe4f4;
+    border-radius:2px;
+    font-size:13px;
+    line-height:1.55;
+    color:#5d6b80;
+    white-space:pre-wrap;
+    word-break:break-word;
+    overflow-wrap:anywhere;
+    cursor:pointer;
+    transition:border-color .15s, color .15s, background .15s;
+  }
+  .item-memo:hover{border-left-color:#a9c0fb;color:var(--ink-soft);background:#fbfcff;}
+  .item-memo:focus-visible{outline:none;border-left-color:var(--accent);background:#f7faff;box-shadow:0 0 0 3px rgba(59,110,246,.10);}
+  .item.done .item-memo{color:#98a3b6;border-left-color:#e6ebf3;}
+
+  .memo-editor{margin-top:8px;display:flex;flex-direction:column;gap:8px;}
+  .memo-editor textarea{
+    width:100%;
+    min-height:74px;
+    padding:9px 12px;
+    border:1px solid #c3d4ff;
+    border-radius:10px;
+    background:#fff;
+    font-family:inherit;
+    font-size:13.5px;
+    line-height:1.55;
+    color:var(--ink);
+    resize:vertical;
+    outline:none;
+    box-shadow:0 0 0 3.5px rgba(59,110,246,.10);
+  }
+  .memo-editor textarea:focus{border-color:#a9c0fb;}
+  .memo-editor-foot{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+  .memo-hint{font-size:11.5px;font-weight:600;color:#9aa5b8;margin-right:auto;}
+  .btn-sm{height:34px;padding:0 13px;font-size:12.5px;border-radius:9px;}
+
+  /* ── 마감일 ───────────────────────────── */
+  .add-row-due{display:grid;grid-template-columns:minmax(150px,210px) 1fr;gap:11px;align-items:end;}
+  .add-row-due .due-quicks{padding-bottom:4px;}
+  .due-quicks{display:flex;align-items:center;flex-wrap:wrap;gap:6px;}
+  .chip{
+    height:38px;
+    padding:0 12px;
+    border-radius:9px;
+    border:1px solid var(--line);
+    background:#fff;
+    font-family:inherit;
+    font-size:12.5px;
+    font-weight:650;
+    color:#647089;
+    display:inline-flex;align-items:center;justify-content:center;gap:5px;
+    white-space:nowrap;
+    transition:border-color .15s, color .15s, background .15s, box-shadow .15s;
+  }
+  .chip:hover{border-color:#d8deea;color:var(--ink-soft);background:#fbfcfe;}
+  .chip:focus-visible{outline:none;border-color:#c3d4ff;box-shadow:0 0 0 3.5px rgba(59,110,246,.16);}
+
+  .due-editor{
+    margin-top:9px;
+    padding:10px;
+    border:1px solid #dbe6ff;
+    border-radius:11px;
+    background:#f8fbff;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .due-editor input[type="date"]{
+    width:100%;
+    height:38px;
+    padding:0 10px;
+    border:1px solid #c3d4ff;
+    border-radius:9px;
+    background:#fff;
+    font-family:inherit;
+    font-size:13.5px;
+    font-weight:600;
+    color:var(--ink);
+    outline:none;
+  }
+  .due-editor input[type="date"]:focus{border-color:#a9c0fb;box-shadow:0 0 0 3.5px rgba(59,110,246,.12);}
+  .due-editor-foot{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+  .due-hint{font-size:11.5px;font-weight:600;color:#9aa5b8;margin-right:auto;}
+
+  .item-meta{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:6px;
+    margin-top:8px;
+  }
+  .badge{
+    display:inline-flex;align-items:center;gap:4.5px;
+    height:22px;
+    padding:0 8px;
+    border-radius:7px;
+    font-size:11.5px;
+    font-weight:700;
+    letter-spacing:-.005em;
+    white-space:nowrap;
+  }
+  .badge .pip{width:5px;height:5px;border-radius:50%;background:currentColor;display:inline-block;flex:0 0 auto;}
+
+  /* 카테고리 */
+  .cat-work{background:#eaf0ff;color:#3358c9;}
+  .cat-personal{background:#f3ecff;color:#6d47c4;}
+  .cat-health{background:#e5f7ef;color:#0a8a5b;}
+  .cat-study{background:#fdf2df;color:#a9730c;}
+
+  /* 우선순위 */
+  .pri-high{background:var(--danger-soft);color:#c23b35;}
+  .pri-normal{background:#eef1f6;color:#5a6779;}
+  .pri-low{background:#eef6fb;color:#3c7d9e;}
+
+  .badge-today{background:#e9f3ff;color:#2563b8;}
+
+  /* 마감일 배지 */
+  .badge-due{background:#eef1f6;color:#5a6779;}
+  .badge-due-soon{background:#e9f3ff;color:#2563b8;}
+  .badge-due-today{background:#dde9ff;color:#1c4fa8;}
+  .badge-due-late{background:var(--danger-soft);color:#c23b35;}
+  .badge-due-done{background:#f2f4f8;color:#8b96a8;}
+  button.badge{border:0;font-family:inherit;cursor:pointer;transition:box-shadow .15s, filter .15s;}
+  button.badge:hover{filter:brightness(.965);box-shadow:0 0 0 3px rgba(59,110,246,.10);}
+  button.badge:focus-visible{outline:none;box-shadow:0 0 0 3.5px rgba(59,110,246,.22);}
+  .badge-due-late:hover{box-shadow:0 0 0 3px rgba(226,80,74,.12);}
+  .badge svg{flex:0 0 auto;}
+
+  .item-actions{display:flex;align-items:center;gap:4px;flex:0 0 auto;}
+  .icon-btn{
+    width:32px;height:32px;
+    border-radius:9px;
+    border:1px solid transparent;
+    background:transparent;
+    display:grid;place-items:center;
+    color:#a8b2c4;
+    transition:all .15s;
+  }
+  .icon-btn:hover{background:var(--danger-soft);color:var(--danger);border-color:#f8d5d2;}
+  .icon-btn:focus-visible{outline:none;box-shadow:0 0 0 3.5px rgba(226,80,74,.16);}
+  .icon-btn.note:hover{background:var(--accent-soft);color:var(--accent);border-color:#c9d8ff;}
+  .icon-btn.note:focus-visible{box-shadow:0 0 0 3.5px rgba(59,110,246,.16);}
+  .icon-btn.note.active{background:var(--accent-soft);color:var(--accent-dark);border-color:#c9d8ff;}
+  .icon-btn.due:hover{background:var(--accent-soft);color:var(--accent);border-color:#c9d8ff;}
+  .icon-btn.due:focus-visible{box-shadow:0 0 0 3.5px rgba(59,110,246,.16);}
+  .icon-btn.due.active{background:var(--accent-soft);color:var(--accent-dark);border-color:#c9d8ff;}
+
+  /* 빈 상태 */
+  .empty{
+    display:none;
+    text-align:center;
+    padding:46px 20px;
+    background:var(--card);
+    border:1px dashed #dde3ee;
+    border-radius:var(--radius);
+    color:var(--muted);
+  }
+  .empty.show{display:block;}
+  .empty .icon{
+    width:48px;height:48px;border-radius:14px;
+    background:#f2f5fb;
+    display:grid;place-items:center;
+    margin:0 auto 12px;
+    color:#9fb0cd;
+  }
+  .empty strong{display:block;color:var(--ink-soft);font-size:14.5px;font-weight:700;margin-bottom:5px;}
+  .empty p{margin:0;font-size:13px;}
+
+  /* ── 백업 · 불러오기 ───────────────────── */
+  .backup-bar{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:18px;
+    padding:12px 14px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:12px;
+    box-shadow:var(--shadow-sm);
+  }
+  .backup-hint{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    font-size:12px;
+    font-weight:600;
+    color:#96a1b3;
+    letter-spacing:.005em;
+    word-break:keep-all;
+  }
+  .backup-hint .pip-sm{
+    width:6px;height:6px;border-radius:50%;
+    background:#c9d3e3;
+    display:inline-block;
+    flex:0 0 auto;
+  }
+  .backup-bar .btn:focus-visible{
+    outline:none;
+    box-shadow:0 0 0 3.5px rgba(59,110,246,.16);
+    border-color:#c3d4ff;
+    color:var(--accent-dark);
+  }
+
+  /* ── 푸터 ─────────────────────────────── */
+  .foot{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:10px;
+    margin-top:22px;
+    padding-top:16px;
+    border-top:1px solid var(--line);
+    font-size:12px;
+    color:#96a1b3;
+  }
+  .saved{
+    display:inline-flex;align-items:center;gap:6px;
+    transition:opacity .3s;
+    opacity:.65;
+  }
+  .saved.flash{opacity:1;}
+  .saved .led{width:6px;height:6px;border-radius:50%;background:var(--ok);}
+  .saved.flash .led{box-shadow:0 0 0 3px var(--ok-soft);}
+
+  .toast{
+    position:fixed;
+    left:50%;bottom:24px;
+    transform:translate(-50%,16px);
+    background:#1e2739;
+    color:#fff;
+    font-size:13px;
+    font-weight:600;
+    padding:11px 18px;
+    border-radius:11px;
+    box-shadow:0 12px 32px -10px rgba(16,24,40,.5);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s, transform .2s;
+    z-index:50;
+    max-width:calc(100% - 32px);
+    text-align:center;
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0);}
+
+  /* ── 반응형 ───────────────────────────── */
+  @media (max-width:760px){
+    .wrap{padding:24px 15px 64px;}
+    h1{font-size:22px;}
+    .top{flex-direction:column;align-items:flex-start;gap:12px;}
+    .today-chip{order:-1;}
+    .summary{padding:16px;}
+    .stats{grid-template-columns:repeat(2,1fr);}
+    .stat-value{font-size:22px;}
+    .panel{padding:15px;}
+    .add-row-1{grid-template-columns:1fr 106px;}
+    .add-row-due{grid-template-columns:1fr;gap:8px;}
+    .add-row-due .due-quicks{padding-bottom:0;}
+    .add-row-2{grid-template-columns:1fr 1fr;}
+    .add-row-2 .btn-primary{grid-column:1 / -1;}
+    .add-row-2 .switch{grid-column:1 / -1;justify-content:flex-start;}
+    .toolbar{gap:8px;}
+    .segmented{width:100%;overflow-x:auto;scrollbar-width:none;}
+    .segmented::-webkit-scrollbar{display:none;}
+    .seg{flex:1 0 auto;text-align:center;padding:8px 10px;}
+    .deadline{padding:12px 13px;}
+    .deadline-tools{width:100%;justify-content:flex-end;}
+    .alarm-toggle{flex:1 1 auto;}
+    .search-wrap{max-width:none;flex:1 1 100%;}
+    #category-filter{flex:1 1 auto;}
+    .item{padding:13px;gap:10px;}
+    .item-title{font-size:14.2px;}
+    .foot{flex-direction:column;align-items:flex-start;gap:8px;}
+    .backup-bar{margin-top:16px;padding:12px;}
+    .backup-hint{flex:1 1 100%;}
+    .backup-bar .spacer{display:none;}
+    .backup-bar .btn{flex:1 1 0;min-width:0;}
+  }
+  @media (max-width:400px){
+    .stats{grid-template-columns:1fr 1fr;gap:8px;}
+    .stat{padding:11px 12px;}
+    .stat-value{font-size:20px;}
+    .add-row-1{grid-template-columns:1fr;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.001ms !important;transition-duration:.001ms !important;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <span class="eyebrow"><span class="dot"></span>나의 하루</span>
+      <h1>To Do</h1>
+      <p class="sub" id="sub-line">오늘의 할 일을 정리해 보세요.</p>
+    </div>
+    <div class="today-chip" id="today-chip">—</div>
+  </header>
+
+  <!-- 17:00 데드라인 -->
+  <section class="deadline" id="deadline" data-state="upcoming" aria-label="오늘 할 일 마감 상태" aria-live="polite">
+    <div class="deadline-copy">
+      <p class="deadline-title" id="deadline-title">오늘 마감 17:00</p>
+      <p class="deadline-desc" id="deadline-desc">오늘의 할 일을 확인하고 있어요.</p>
+    </div>
+    <div class="deadline-tools">
+      <button class="alarm-toggle on" type="button" id="alarm-toggle" aria-pressed="true"
+              title="오후 5시 알람 켜기 · 끄기">🔔 17:00 알람 켜짐</button>
+      <button class="btn btn-ghost btn-sm" type="button" id="alarm-test" title="알람음을 미리 듣습니다">테스트</button>
+    </div>
+  </section>
+
+  <!-- 요약 -->
+  <section class="summary" aria-label="할 일 요약">
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label"><i style="background:#3b6ef6"></i>전체 할 일</div>
+        <div class="stat-value" id="stat-total">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label"><i style="background:#e08c14"></i>진행 중</div>
+        <div class="stat-value" id="stat-active">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label"><i style="background:#0ea36b"></i>완료됨</div>
+        <div class="stat-value" id="stat-done">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label"><i style="background:#7c8cff"></i>오늘 할 일</div>
+        <div class="stat-value" id="stat-today">0</div>
+      </div>
+    </div>
+
+    <div class="progress-block">
+      <div class="progress-head">
+        <span>완료율</span>
+        <span class="rate" id="rate-text">0%</span>
+      </div>
+      <div class="track" role="progressbar" aria-labelledby="rate-text" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progressbar">
+        <div class="fill" id="progress-fill"></div>
+      </div>
+      <p class="progress-note" id="progress-note">아직 등록된 할 일이 없습니다.</p>
+    </div>
+  </section>
+
+  <!-- 추가 폼 -->
+  <section class="panel" aria-label="할 일 추가">
+    <h2 class="panel-title">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <circle cx="8" cy="8" r="7" stroke="#3b6ef6" stroke-width="1.6"/>
+        <path d="M8 5v6M5 8h6" stroke="#3b6ef6" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      새 할 일 추가
+    </h2>
+
+    <form class="add-form" id="add-form" novalidate>
+      <div class="add-row-1">
+        <div class="field">
+          <label for="title">할 일 제목</label>
+          <input class="input" id="title" name="title" type="text" maxlength="120" autocomplete="off"
+                 placeholder="예) 주간 보고서 초안 작성" />
+        </div>
+        <div class="field">
+          <label for="priority">우선순위</label>
+          <select class="input" id="priority" name="priority">
+            <option value="normal" selected>보통</option>
+            <option value="high">높음</option>
+            <option value="low">낮음</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="memo">메모 <span class="opt">(선택)</span></label>
+        <textarea class="input textarea" id="memo" name="memo" rows="2" maxlength="500"
+                  placeholder="예) 참고 링크, 다음 단계, 기억해 둘 내용을 자유롭게 적어 두세요."></textarea>
+      </div>
+
+      <div class="add-row-due">
+        <div class="field">
+          <label for="due">마감일 <span class="opt">(선택)</span></label>
+          <input class="input" id="due" name="due" type="date" />
+        </div>
+        <div class="due-quicks" role="group" aria-label="마감일 빠른 선택">
+          <button class="chip" type="button" data-quick="today">오늘</button>
+          <button class="chip" type="button" data-quick="tomorrow">내일</button>
+          <button class="chip" type="button" data-quick="week">1주 뒤</button>
+          <button class="chip" type="button" data-quick="clear">비우기</button>
+        </div>
+      </div>
+
+      <div class="add-row-2">
+        <div class="field">
+          <label for="category">카테고리</label>
+          <select class="input" id="category" name="category">
+            <option value="work" selected>업무</option>
+            <option value="personal">개인</option>
+            <option value="health">건강</option>
+            <option value="study">학습</option>
+          </select>
+        </div>
+
+        <label class="switch" for="today-toggle">
+          <input type="checkbox" id="today-toggle" />
+          <span class="box" aria-hidden="true">
+            <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+              <path d="M1.8 6.3 4.6 9l5.6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          <span class="box-text">오늘 할 일</span>
+        </label>
+
+        <button type="submit" class="btn btn-primary">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          추가
+        </button>
+      </div>
+      <p class="form-error" id="form-error">할 일 제목을 입력해 주세요.</p>
+    </form>
+  </section>
+
+  <!-- 필터 -->
+  <div class="toolbar" role="group" aria-label="필터와 검색">
+    <div class="segmented" role="tablist" aria-label="상태 필터">
+      <button class="seg active" type="button" data-status="all" role="tab" aria-selected="true">전체 <span class="cnt" id="cnt-all">0</span></button>
+      <button class="seg" type="button" data-status="today" role="tab" aria-selected="false">오늘 <span class="cnt" id="cnt-today">0</span></button>
+      <button class="seg" type="button" data-status="active" role="tab" aria-selected="false">진행중 <span class="cnt" id="cnt-active">0</span></button>
+      <button class="seg" type="button" data-status="done" role="tab" aria-selected="false">완료 <span class="cnt" id="cnt-done">0</span></button>
+    </div>
+
+    <span class="spacer"></span>
+
+    <select id="category-filter" aria-label="카테고리 필터">
+      <option value="all">모든 카테고리</option>
+      <option value="work">업무</option>
+      <option value="personal">개인</option>
+      <option value="health">건강</option>
+      <option value="study">학습</option>
+    </select>
+
+    <div class="search-wrap">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.6"/>
+        <path d="M10.8 10.8 14 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <input id="search" type="search" placeholder="제목·메모 검색" autocomplete="off" aria-label="할 일 제목 또는 메모 검색" />
+      <button class="clear-search" type="button" id="clear-search" aria-label="검색어 지우기">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M2.5 2.5 9.5 9.5M9.5 2.5 2.5 9.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="list-head">
+    <span class="list-count" id="list-count">0개 표시 중</span>
+    <button class="btn btn-ghost" type="button" id="clear-done" style="height:36px;padding:0 13px;font-size:12.5px;">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M2.5 4h11M6 4V2.8h4V4M4 4l.6 8.4a1.2 1.2 0 0 0 1.2 1.1h4.4a1.2 1.2 0 0 0 1.2-1.1L12 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      완료 항목 지우기
+    </button>
+  </div>
+
+  <ul class="list" id="list" aria-live="polite"></ul>
+
+  <div class="empty" id="empty">
+    <div class="icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="3.5" y="3.5" width="17" height="17" rx="4" stroke="currentColor" stroke-width="1.7"/>
+        <path d="M8 12.2l2.8 2.8L16.4 9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <strong id="empty-title">표시할 할 일이 없습니다</strong>
+    <p id="empty-desc">위에서 새 할 일을 추가해 보세요.</p>
+  </div>
+
+  <!-- 백업 · 불러오기 -->
+  <div class="backup-bar" role="group" aria-label="할 일 백업과 불러오기">
+    <span class="backup-hint"><span class="pip-sm"></span>할 일을 JSON 파일로 보관할 수 있어요</span>
+    <span class="spacer"></span>
+    <button class="btn btn-ghost btn-sm" type="button" id="backup-save"
+            title="지금 목록을 JSON 파일로 저장합니다">💾 백업 저장</button>
+    <button class="btn btn-ghost btn-sm" type="button" id="backup-load"
+            title="저장해 둔 JSON 백업 파일을 불러옵니다">📂 백업 불러오기</button>
+    <input id="backup-file" type="file" accept=".json,application/json" hidden tabindex="-1" aria-hidden="true" />
+  </div>
+
+  <footer class="foot">
+    <span class="saved" id="saved-indicator"><span class="led"></span><span id="saved-text">이 브라우저에 자동 저장됩니다</span></span>
+    <span id="total-note">0개 · 데이터는 이 기기에만 저장됩니다</span>
+  </footer>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var STORAGE_KEY = "todo-dashboard.v1";
+  var ALARM_KEY = "todo-dashboard.alarm.v1";
+  var ALARM_FIRED_KEY = "todo-dashboard.alarm.fired.v1";
+  var DEADLINE_HOUR = 17;
+  var DEADLINE_MINUTE = 0;
+
+  var CATEGORIES = {
+    work:     { label: "업무", className: "cat-work" },
+    personal: { label: "개인", className: "cat-personal" },
+    health:   { label: "건강", className: "cat-health" },
+    study:    { label: "학습", className: "cat-study" }
+  };
+
+  var PRIORITIES = {
+    high:   { label: "높음", className: "pri-high",   weight: 3 },
+    normal: { label: "보통", className: "pri-normal", weight: 2 },
+    low:    { label: "낮음", className: "pri-low",    weight: 1 }
+  };
+
+  var SEED_TODOS = [
+    { title: "주간 업무 보고서 초안 작성", category: "work",     priority: "high",   today: true,  done: false,
+      memo: "지난주 실적 표와 이번 주 일정은 목요일 오전까지 정리.\n팀장님 피드백 반영 후 금요일 오후에 공유하기." },
+    { title: "팀 회의 준비 및 안건 정리",  category: "work",     priority: "normal", today: true,  done: false },
+    { title: "저녁 30분 빠르게 걷기",      category: "health",   priority: "normal", today: true,  done: false,
+      memo: "공원 한 바퀴 · 끝나고 종아리 스트레칭 5분." },
+    { title: "장보기 목록 정리하기",       category: "personal", priority: "low",    today: false, done: false },
+    { title: "자바스크립트 강의 1강 듣기", category: "study",    priority: "normal", today: false, done: true  }
+  ];
+
+  var state = {
+    todos: [],
+    status: "all",
+    category: "all",
+    query: "",
+    editingMemoId: null,
+    memoDraft: "",
+    editingDueId: null,
+    dueDraft: "",
+    alarm: { enabled: true, lastFired: null }
+  };
+
+  var pendingNewId = null;
+
+  var els = {
+    form:        document.getElementById("add-form"),
+    title:       document.getElementById("title"),
+    memo:        document.getElementById("memo"),
+    priority:    document.getElementById("priority"),
+    category:    document.getElementById("category"),
+    todayToggle: document.getElementById("today-toggle"),
+    due:         document.getElementById("due"),
+    formError:   document.getElementById("form-error"),
+    list:        document.getElementById("list"),
+    empty:       document.getElementById("empty"),
+    emptyTitle:  document.getElementById("empty-title"),
+    emptyDesc:   document.getElementById("empty-desc"),
+    listCount:   document.getElementById("list-count"),
+    totalNote:   document.getElementById("total-note"),
+    statTotal:   document.getElementById("stat-total"),
+    statActive:  document.getElementById("stat-active"),
+    statDone:    document.getElementById("stat-done"),
+    statToday:   document.getElementById("stat-today"),
+    rateText:    document.getElementById("rate-text"),
+    progressBar: document.getElementById("progressbar"),
+    progressFill:document.getElementById("progress-fill"),
+    progressNote:document.getElementById("progress-note"),
+    todayChip:   document.getElementById("today-chip"),
+    subLine:     document.getElementById("sub-line"),
+    deadline:    document.getElementById("deadline"),
+    deadlineTitle: document.getElementById("deadline-title"),
+    deadlineDesc:  document.getElementById("deadline-desc"),
+    alarmToggle: document.getElementById("alarm-toggle"),
+    alarmTest:   document.getElementById("alarm-test"),
+    search:      document.getElementById("search"),
+    clearSearch: document.getElementById("clear-search"),
+    categoryFilter: document.getElementById("category-filter"),
+    clearDone:   document.getElementById("clear-done"),
+    backupSave:  document.getElementById("backup-save"),
+    backupLoad:  document.getElementById("backup-load"),
+    backupFile:  document.getElementById("backup-file"),
+    saved:       document.getElementById("saved-indicator"),
+    savedText:   document.getElementById("saved-text"),
+    toast:       document.getElementById("toast"),
+    countAll:    document.getElementById("cnt-all"),
+    countToday:  document.getElementById("cnt-today"),
+    countActive: document.getElementById("cnt-active"),
+    countDone:   document.getElementById("cnt-done")
+  };
+
+  /* ── 저장소 ───────────────────────────── */
+  var storageOK = (function () {
+    try {
+      var k = "__todo_test__";
+      window.localStorage.setItem(k, "1");
+      window.localStorage.removeItem(k);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  })();
+
+  function loadTodos() {
+    if (!storageOK) {
+      return seedCopy();
+    }
+    var raw = null;
+    try {
+      raw = window.localStorage.getItem(STORAGE_KEY);
+    } catch (e) {
+      return seedCopy();
+    }
+    // 키가 없으면 "최초 실행"으로 보고 예시 데이터를 넣는다.
+    if (raw === null || raw === undefined) {
+      var seeded = seedCopy();
+      saveTodos(seeded);
+      return seeded;
+    }
+    try {
+      var parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.map(normalizeTodo).filter(Boolean);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function seedCopy() {
+    return SEED_TODOS.map(function (t, i) {
+      return normalizeTodo({
+        id: "seed-" + i + "-" + Math.random().toString(36).slice(2, 7),
+        title: t.title,
+        category: t.category,
+        priority: t.priority,
+        today: t.today,
+        done: t.done,
+        memo: t.memo || "",
+        createdAt: Date.now() - (SEED_TODOS.length - i) * 60000
+      });
+    }).filter(Boolean);
+  }
+
+  function normalizeTodo(t) {
+    if (!t || typeof t !== "object") return null;
+    var title = typeof t.title === "string" ? t.title.trim() : "";
+    if (!title) return null;
+    return {
+      id: typeof t.id === "string" && t.id ? t.id : uid(),
+      title: title,
+      category: Object.prototype.hasOwnProperty.call(CATEGORIES, t.category) ? t.category : "personal",
+      priority: Object.prototype.hasOwnProperty.call(PRIORITIES, t.priority) ? t.priority : "normal",
+      today: !!t.today,
+      done: !!t.done,
+      // 예전 저장 데이터에는 memo 필드가 없을 수 있다.
+      memo: typeof t.memo === "string" ? t.memo.replace(/\r\n/g, "\n").slice(0, 500) : "",
+      // dueDate도 마찬가지로 예전 저장 데이터에는 없을 수 있다(빈 값이면 마감일 없음).
+      dueDate: normalizeDueDate(t.dueDate),
+      createdAt: typeof t.createdAt === "number" && isFinite(t.createdAt) ? t.createdAt : Date.now()
+    };
+  }
+
+  /* ── 마감일 계산 ──────────────────────── */
+  function normalizeDueDate(value) {
+    if (typeof value !== "string") return "";
+    var s = value.replace(/^\s+|\s+$/g, "");
+    if (!s) return "";
+    // ISO 날짜·시간 문자열은 날짜 부분만 쓴다.
+    if (/^\d{4}-\d{2}-\d{2}T/.test(s)) s = s.slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return "";
+    var parts = s.split("-");
+    var y = parseInt(parts[0], 10);
+    var m = parseInt(parts[1], 10);
+    var d = parseInt(parts[2], 10);
+    var dt = new Date(y, m - 1, d);
+    if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) return "";
+    return s;
+  }
+
+  /* 마감일까지 남은 일수(오늘=0, 지난 날짜는 음수). 마감일이 없으면 null. */
+  function dueDiff(dueDate) {
+    var key = normalizeDueDate(dueDate);
+    if (!key) return null;
+    var parts = key.split("-");
+    var target = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    var now = new Date();
+    var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return Math.round((target.getTime() - today.getTime()) / 86400000);
+  }
+
+  function dueShortLabel(dueDate) {
+    var key = normalizeDueDate(dueDate);
+    if (!key) return "";
+    var parts = key.split("-");
+    var y = parseInt(parts[0], 10);
+    var m = parseInt(parts[1], 10);
+    var d = parseInt(parts[2], 10);
+    return (y === new Date().getFullYear() ? "" : y + ".") + m + "/" + d;
+  }
+
+  function dueFullLabel(dueDate) {
+    var key = normalizeDueDate(dueDate);
+    if (!key) return "";
+    var parts = key.split("-");
+    var y = parseInt(parts[0], 10);
+    var m = parseInt(parts[1], 10);
+    var d = parseInt(parts[2], 10);
+    var week = ["일", "월", "화", "수", "목", "금", "토"][new Date(y, m - 1, d).getDay()];
+    return y + "년 " + m + "월 " + d + "일 (" + week + ")";
+  }
+
+  function isDueToday(todo) {
+    return !!todo && normalizeDueDate(todo.dueDate) === dateKey(new Date());
+  }
+
+  /* '오늘 할 일'로 보는 항목: 직접 표시했거나 마감일이 오늘인 항목 */
+  function isTodayTask(todo) {
+    return !!todo && (!!todo.today || isDueToday(todo));
+  }
+
+  function countLateOpen() {
+    var n = 0;
+    for (var i = 0; i < state.todos.length; i++) {
+      if (state.todos[i].done) continue;
+      var diff = dueDiff(state.todos[i].dueDate);
+      if (diff !== null && diff < 0) n++;
+    }
+    return n;
+  }
+
+  function dueBadgeInfo(todo) {
+    var diff = dueDiff(todo.dueDate);
+    if (diff === null) return null;
+    var short = dueShortLabel(todo.dueDate);
+    var full = dueFullLabel(todo.dueDate);
+    if (todo.done) {
+      return { kind: "done", className: "badge-due-done", label: short + " 마감", full: full, diff: diff };
+    }
+    if (diff < 0) {
+      return { kind: "late", className: "badge-due-late",
+               label: "지연 D+" + (-diff) + " · " + short,
+               full: full + " · 마감 " + (-diff) + "일 지남", diff: diff };
+    }
+    if (diff === 0) {
+      return { kind: "today", className: "badge-due-today", label: "오늘 마감", full: full, diff: diff };
+    }
+    if (diff === 1) {
+      return { kind: "soon", className: "badge-due-soon", label: "내일 마감 · " + short, full: full, diff: diff };
+    }
+    return {
+      kind: diff <= 3 ? "soon" : "future",
+      className: diff <= 3 ? "badge-due-soon" : "badge-due",
+      label: "D-" + diff + " · " + short,
+      full: full,
+      diff: diff
+    };
+  }
+
+  function dueStateClass(todo) {
+    if (!todo || todo.done) return "";
+    var diff = dueDiff(todo.dueDate);
+    if (diff === null) return "";
+    if (diff < 0) return "due-late";
+    if (diff === 0) return "due-today";
+    return "";
+  }
+
+  /* 오늘·내일·1주 뒤 날짜 키를 만든다. */
+  function quickDate(kind) {
+    var now = new Date();
+    var base = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    if (kind === "tomorrow") base.setDate(base.getDate() + 1);
+    else if (kind === "week") base.setDate(base.getDate() + 7);
+    else if (kind === "clear") return "";
+    return dateKey(base);
+  }
+
+  var saveTimer = null;
+  function saveTodos(todos) {
+    if (!storageOK) return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+    } catch (e) {
+      /* 저장 공간이 없거나 차단된 경우 조용히 넘어간다 */
+    }
+  }
+
+  function persist() {
+    saveTodos(state.todos);
+    flashSaved();
+  }
+
+  function flashSaved() {
+    if (!els.saved || !els.savedText) return;
+    if (!storageOK) {
+      els.savedText.textContent = "저장이 지원되지 않는 환경입니다";
+      return;
+    }
+    els.saved.classList.add("flash");
+    els.savedText.textContent = "저장됨";
+    if (saveTimer) window.clearTimeout(saveTimer);
+    saveTimer = window.setTimeout(function () {
+      els.saved.classList.remove("flash");
+      els.savedText.textContent = "이 브라우저에 자동 저장됩니다";
+    }, 1600);
+  }
+
+  function uid() {
+    return "t-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+  }
+
+  /* ── 필터 / 정렬 ──────────────────────── */
+  function visibleTodos() {
+    var q = state.query.trim().toLowerCase();
+    var out = state.todos.filter(function (t) {
+      if (state.status === "today" && !isTodayTask(t)) return false;
+      if (state.status === "active" && t.done) return false;
+      if (state.status === "done" && !t.done) return false;
+      if (state.category !== "all" && t.category !== state.category) return false;
+      if (q) {
+        var haystack = (t.title + "\n" + (t.memo || "")).toLowerCase();
+        if (haystack.indexOf(q) === -1) return false;
+      }
+      return true;
+    });
+
+    out.sort(function (a, b) {
+      if (a.done !== b.done) return a.done ? 1 : -1;
+      // 오늘 처리할 항목을 먼저, 그 다음은 마감이 임박한 순서로 놓는다.
+      var aToday = isTodayTask(a) ? 0 : 1;
+      var bToday = isTodayTask(b) ? 0 : 1;
+      if (aToday !== bToday) return aToday - bToday;
+      var aDue = dueDiff(a.dueDate);
+      var bDue = dueDiff(b.dueDate);
+      if (aDue === null && bDue !== null) return 1;
+      if (aDue !== null && bDue === null) return -1;
+      if (aDue !== null && bDue !== null && aDue !== bDue) return aDue - bDue;
+      var pa = PRIORITIES[a.priority].weight;
+      var pb = PRIORITIES[b.priority].weight;
+      if (pa !== pb) return pb - pa;
+      return b.createdAt - a.createdAt;
+    });
+    return out;
+  }
+
+  /* ── 렌더링 ───────────────────────────── */
+  function render() {
+    renderSummary();
+    renderList();
+    renderToolbarCounts();
+    renderDeadline();
+  }
+
+  function renderSummary() {
+    var total = state.todos.length;
+    var done = state.todos.filter(function (t) { return t.done; }).length;
+    var active = total - done;
+    var todayCount = state.todos.filter(function (t) { return isTodayTask(t); }).length;
+    var late = countLateOpen();
+    var rate = total === 0 ? 0 : Math.round((done / total) * 100);
+
+    els.statTotal.textContent = String(total);
+    els.statActive.textContent = String(active);
+    els.statDone.textContent = String(done);
+    els.statToday.textContent = String(todayCount);
+
+    els.rateText.textContent = rate + "%";
+    els.progressFill.style.width = rate + "%";
+    els.progressBar.setAttribute("aria-valuenow", String(rate));
+
+    if (total === 0) {
+      els.progressNote.textContent = "아직 등록된 할 일이 없습니다. 첫 할 일을 추가해 보세요.";
+    } else if (done === total) {
+      els.progressNote.textContent = "모든 할 일을 완료했습니다. 수고하셨어요!";
+    } else {
+      els.progressNote.textContent = done + "개 완료 · " + active + "개 남음" +
+        (late > 0 ? " · 마감 지난 할 일 " + late + "개" : "");
+    }
+
+    if (els.totalNote) {
+      els.totalNote.textContent = total + "개 · 데이터는 이 기기에만 저장됩니다";
+    }
+  }
+
+  function renderToolbarCounts() {
+    var total = state.todos.length;
+    var doneCount = 0;
+    var todayCount = 0;
+    for (var i = 0; i < state.todos.length; i++) {
+      if (state.todos[i].done) doneCount++;
+      if (isTodayTask(state.todos[i])) todayCount++;
+    }
+    els.countAll.textContent = String(total);
+    els.countToday.textContent = String(todayCount);
+    els.countActive.textContent = String(total - doneCount);
+    els.countDone.textContent = String(doneCount);
+    els.clearDone.disabled = doneCount === 0;
+  }
+
+  function renderList() {
+    var items = visibleTodos();
+    var frag = document.createDocumentFragment();
+
+    items.forEach(function (todo) {
+      frag.appendChild(buildItem(todo));
+    });
+
+    els.list.textContent = "";
+    els.list.appendChild(frag);
+
+    pendingNewId = null;
+
+    els.listCount.textContent = items.length + "개 표시 중";
+
+    if (state.editingMemoId) focusMemoEditor();
+
+    if (items.length === 0) {
+      var isFiltered = state.query.trim() !== "" || state.status !== "all" || state.category !== "all";
+      if (state.todos.length === 0) {
+        els.emptyTitle.textContent = "표시할 할 일이 없습니다";
+        els.emptyDesc.textContent = "위에서 새 할 일을 추가해 보세요.";
+      } else if (isFiltered) {
+        els.emptyTitle.textContent = "조건에 맞는 할 일이 없습니다";
+        els.emptyDesc.textContent = "필터나 검색어를 바꿔 보세요.";
+      } else {
+        els.emptyTitle.textContent = "표시할 할 일이 없습니다";
+        els.emptyDesc.textContent = "위에서 새 할 일을 추가해 보세요.";
+      }
+      els.empty.classList.add("show");
+    } else {
+      els.empty.classList.remove("show");
+    }
+  }
+
+  var SVG_NS = "http://www.w3.org/2000/svg";
+
+  function svgIcon(pathD, size, strokeWidth) {
+    var svg = document.createElementNS(SVG_NS, "svg");
+    svg.setAttribute("width", String(size));
+    svg.setAttribute("height", String(size));
+    svg.setAttribute("viewBox", "0 0 16 16");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("aria-hidden", "true");
+    var path = document.createElementNS(SVG_NS, "path");
+    path.setAttribute("d", pathD);
+    path.setAttribute("stroke", "currentColor");
+    path.setAttribute("stroke-width", String(strokeWidth || 2));
+    path.setAttribute("stroke-linecap", "round");
+    path.setAttribute("stroke-linejoin", "round");
+    svg.appendChild(path);
+    return svg;
+  }
+
+  function buildMemoEditor(todo) {
+    var wrap = document.createElement("div");
+    wrap.className = "memo-editor";
+
+    var ta = document.createElement("textarea");
+    ta.className = "memo-editor-input";
+    ta.setAttribute("data-memo-input", "1");
+    ta.setAttribute("maxlength", "500");
+    ta.setAttribute("aria-label", "메모 입력: " + todo.title);
+    ta.setAttribute("placeholder", "메모를 입력하세요. (선택)");
+    ta.rows = 3;
+    ta.value = state.memoDraft;
+    wrap.appendChild(ta);
+
+    var foot = document.createElement("div");
+    foot.className = "memo-editor-foot";
+
+    var hint = document.createElement("span");
+    hint.className = "memo-hint";
+    hint.textContent = "Ctrl(⌘)+Enter 저장 · Esc 취소";
+    foot.appendChild(hint);
+
+    var cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.className = "btn btn-ghost btn-sm";
+    cancel.setAttribute("data-action", "memo-cancel");
+    cancel.textContent = "취소";
+    foot.appendChild(cancel);
+
+    var save = document.createElement("button");
+    save.type = "button";
+    save.className = "btn btn-primary btn-sm";
+    save.setAttribute("data-action", "memo-save");
+    save.textContent = "메모 저장";
+    foot.appendChild(save);
+
+    wrap.appendChild(foot);
+    return wrap;
+  }
+
+  function focusMemoEditor() {
+    if (!state.editingMemoId) return;
+    var ta = null;
+    try {
+      ta = els.list.querySelector("[data-memo-input]");
+    } catch (e) {
+      ta = null;
+    }
+    if (!ta || typeof ta.focus !== "function") return;
+    ta.focus();
+    try {
+      var end = ta.value.length;
+      ta.setSelectionRange(end, end);
+    } catch (e) {
+      /* selection API가 없으면 무시 */
+    }
+  }
+
+  function buildDueBadge(todo) {
+    var info = dueBadgeInfo(todo);
+    if (!info) return null;
+    var badge = document.createElement("button");
+    badge.type = "button";
+    badge.className = "badge " + info.className;
+    badge.setAttribute("data-action", "due");
+    badge.setAttribute("aria-expanded", todo.id === state.editingDueId ? "true" : "false");
+    badge.setAttribute("aria-label", "마감일 변경: " + info.full);
+    badge.title = "마감일 " + info.full + " · 눌러서 변경";
+    badge.appendChild(svgIcon("M3.1 3.4h9.8a1 1 0 0 1 1 1v8.2a1 1 0 0 1-1 1H3.1a1 1 0 0 1-1-1V4.4a1 1 0 0 1 1-1ZM2.1 6.4h11.8M5.6 2.5v2.4M10.4 2.5v2.4", 11, 1.5));
+    badge.appendChild(document.createTextNode(info.label));
+    return badge;
+  }
+
+  function buildDueEditor(todo) {
+    var wrap = document.createElement("div");
+    wrap.className = "due-editor";
+
+    var input = document.createElement("input");
+    input.type = "date";
+    input.setAttribute("data-due-input", "1");
+    input.setAttribute("aria-label", "마감일 선택: " + todo.title);
+    input.value = state.dueDraft || "";
+    wrap.appendChild(input);
+
+    var quicks = document.createElement("div");
+    quicks.className = "due-quicks";
+    quicks.setAttribute("role", "group");
+    quicks.setAttribute("aria-label", "마감일 빠른 선택");
+    var quickList = [
+      { key: "today", label: "오늘" },
+      { key: "tomorrow", label: "내일" },
+      { key: "week", label: "1주 뒤" },
+      { key: "clear", label: "비우기" }
+    ];
+    for (var i = 0; i < quickList.length; i++) {
+      var chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "chip";
+      chip.setAttribute("data-action", "due-quick");
+      chip.setAttribute("data-due-quick", quickList[i].key);
+      chip.textContent = quickList[i].label;
+      quicks.appendChild(chip);
+    }
+    wrap.appendChild(quicks);
+
+    var foot = document.createElement("div");
+    foot.className = "due-editor-foot";
+
+    var hint = document.createElement("span");
+    hint.className = "due-hint";
+    hint.textContent = "비워 두면 마감일 없음";
+    foot.appendChild(hint);
+
+    var cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.className = "btn btn-ghost btn-sm";
+    cancel.setAttribute("data-action", "due-cancel");
+    cancel.textContent = "취소";
+    foot.appendChild(cancel);
+
+    var save = document.createElement("button");
+    save.type = "button";
+    save.className = "btn btn-primary btn-sm";
+    save.setAttribute("data-action", "due-save");
+    save.textContent = "마감일 저장";
+    foot.appendChild(save);
+
+    wrap.appendChild(foot);
+    return wrap;
+  }
+
+  function focusDueEditor() {
+    if (!state.editingDueId) return;
+    var input = null;
+    try {
+      input = els.list.querySelector("[data-due-input]");
+    } catch (e) {
+      input = null;
+    }
+    if (!input || typeof input.focus !== "function") return;
+    input.focus();
+  }
+
+  function buildItem(todo) {
+    var li = document.createElement("li");
+    var dueClass = dueStateClass(todo);
+    li.className = "item" + (todo.done ? " done" : "") + (dueClass ? " " + dueClass : "") +
+                   (todo.id === pendingNewId ? " is-new" : "");
+    li.setAttribute("data-id", todo.id);
+
+    // 체크박스
+    var check = document.createElement("button");
+    check.type = "button";
+    check.className = "check";
+    check.setAttribute("data-action", "toggle");
+    check.setAttribute("aria-pressed", todo.done ? "true" : "false");
+    check.setAttribute("aria-label", (todo.done ? "완료 취소: " : "완료 표시: ") + todo.title);
+    check.appendChild(svgIcon("M3.2 8.4 6.4 11.6 12.8 5.2", 11, 2.1));
+    li.appendChild(check);
+
+    // 본문
+    var main = document.createElement("div");
+    main.className = "item-main";
+
+    var titleEl = document.createElement("div");
+    titleEl.className = "item-title";
+    titleEl.textContent = todo.title;
+    main.appendChild(titleEl);
+
+    // 메모: 있으면 제목 아래에 표시하고, 수정 중이면 편집기를 보여 준다.
+    if (todo.id === state.editingMemoId) {
+      main.appendChild(buildMemoEditor(todo));
+    } else if (todo.memo) {
+      var memoEl = document.createElement("div");
+      memoEl.className = "item-memo";
+      memoEl.setAttribute("data-action", "memo");
+      memoEl.setAttribute("role", "button");
+      memoEl.setAttribute("tabindex", "0");
+      memoEl.setAttribute("aria-label", "메모 수정: " + todo.title);
+      memoEl.title = "메모 수정";
+      memoEl.textContent = todo.memo;
+      main.appendChild(memoEl);
+    }
+
+    // 마감일 편집: 마감일 배지나 달력 버튼을 누를 때 열린다.
+    if (todo.id === state.editingDueId) {
+      main.appendChild(buildDueEditor(todo));
+    }
+
+    var meta = document.createElement("div");
+    meta.className = "item-meta";
+
+    var dueBadge = buildDueBadge(todo);
+    if (dueBadge) meta.appendChild(dueBadge);
+
+    var cat = CATEGORIES[todo.category];
+    var catBadge = document.createElement("span");
+    catBadge.className = "badge " + cat.className;
+    var pip = document.createElement("span");
+    pip.className = "pip";
+    catBadge.appendChild(pip);
+    catBadge.appendChild(document.createTextNode(cat.label));
+    meta.appendChild(catBadge);
+
+    var pri = PRIORITIES[todo.priority];
+    var priBadge = document.createElement("span");
+    priBadge.className = "badge " + pri.className;
+    priBadge.textContent = pri.label;
+    meta.appendChild(priBadge);
+
+    if (todo.today && !isDueToday(todo)) {
+      var todayBadge = document.createElement("span");
+      todayBadge.className = "badge badge-today";
+      todayBadge.textContent = "오늘 할 일";
+      meta.appendChild(todayBadge);
+    }
+
+    main.appendChild(meta);
+    li.appendChild(main);
+
+    // 메모 · 삭제
+    var actions = document.createElement("div");
+    actions.className = "item-actions";
+
+    var memoEditing = todo.id === state.editingMemoId;
+
+    // 마감일이 없을 때만 달력 버튼을 둔다(있으면 배지를 눌러 수정).
+    if (!normalizeDueDate(todo.dueDate)) {
+      var dueBtn = document.createElement("button");
+      dueBtn.type = "button";
+      dueBtn.className = "icon-btn due" + (todo.id === state.editingDueId ? " active" : "");
+      dueBtn.setAttribute("data-action", "due");
+      dueBtn.setAttribute("aria-expanded", todo.id === state.editingDueId ? "true" : "false");
+      dueBtn.setAttribute("aria-label", "마감일 지정: " + todo.title);
+      dueBtn.title = "마감일 지정";
+      dueBtn.appendChild(svgIcon("M3.1 3.4h9.8a1 1 0 0 1 1 1v8.2a1 1 0 0 1-1 1H3.1a1 1 0 0 1-1-1V4.4a1 1 0 0 1 1-1ZM2.1 6.4h11.8M5.6 2.5v2.4M10.4 2.5v2.4", 14, 1.4));
+      actions.appendChild(dueBtn);
+    }
+
+    var note = document.createElement("button");
+    note.type = "button";
+    note.className = "icon-btn note" + (memoEditing ? " active" : "");
+    note.setAttribute("data-action", "memo");
+    note.setAttribute("aria-expanded", memoEditing ? "true" : "false");
+    note.setAttribute("aria-label", (todo.memo ? "메모 수정: " : "메모 추가: ") + todo.title);
+    note.title = todo.memo ? "메모 수정" : "메모 추가";
+    note.appendChild(svgIcon("M11.3 2.4 13.6 4.7 5.5 12.8 2.5 13.4 3.1 10.4z", 14, 1.5));
+    actions.appendChild(note);
+
+    var del = document.createElement("button");
+    del.type = "button";
+    del.className = "icon-btn";
+    del.setAttribute("data-action", "delete");
+    del.setAttribute("aria-label", "삭제: " + todo.title);
+    del.title = "삭제";
+    del.appendChild(svgIcon("M2.6 4.4h10.8M6.2 4.4V3.1h3.6v1.3M4.2 4.4l.6 8a1.1 1.1 0 0 0 1.1 1h4.2a1.1 1.1 0 0 0 1.1-1l.6-8", 14, 1.4));
+    actions.appendChild(del);
+    li.appendChild(actions);
+
+    return li;
+  }
+
+  /* ── 동작 ─────────────────────────────── */
+  var toastTimer = null;
+  function toast(message) {
+    els.toast.textContent = message;
+    els.toast.classList.add("show");
+    if (toastTimer) window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(function () {
+      els.toast.classList.remove("show");
+    }, 1900);
+  }
+
+  function findTodo(id) {
+    for (var i = 0; i < state.todos.length; i++) {
+      if (state.todos[i].id === id) return state.todos[i];
+    }
+    return null;
+  }
+
+  function hasTextSelection() {
+    try {
+      if (window.getSelection) {
+        var sel = window.getSelection();
+        return !!(sel && String(sel).length > 0);
+      }
+    } catch (e) {
+      /* 무시 */
+    }
+    return false;
+  }
+
+  function focusNoteButton(id) {
+    if (!id) return;
+    try {
+      var items = els.list.querySelectorAll(".item");
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].getAttribute("data-id") !== id) continue;
+        var btns = items[i].querySelectorAll("[data-action]");
+        for (var j = 0; j < btns.length; j++) {
+          if (btns[j].getAttribute("data-action") === "memo" && btns[j].tagName === "BUTTON") {
+            if (typeof btns[j].focus === "function") btns[j].focus();
+            return;
+          }
+        }
+      }
+    } catch (e) {
+      /* 무시 */
+    }
+  }
+
+  /* ── 마감일 편집 ─────────────────────────── */
+  function dueWeekday(dueDate) {
+    var key = normalizeDueDate(dueDate);
+    if (!key) return "";
+    var parts = key.split("-");
+    var dt = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+    return ["일", "월", "화", "수", "목", "금", "토"][dt.getDay()];
+  }
+
+  function openDueEditor(todo) {
+    if (!todo) return;
+    if (state.editingDueId === todo.id) {
+      // 이미 열려 있으면 다시 눌러 닫는다.
+      closeDueEditor();
+      return;
+    }
+    state.editingDueId = todo.id;
+    state.dueDraft = normalizeDueDate(todo.dueDate);
+    renderList();
+    focusDueEditor();
+  }
+
+  function closeDueEditor() {
+    if (!state.editingDueId) return;
+    var id = state.editingDueId;
+    state.editingDueId = null;
+    state.dueDraft = "";
+    renderList();
+    focusDueControl(id);
+  }
+
+  function saveDue(id) {
+    var todo = findTodo(id);
+    if (!todo) return;
+    var before = normalizeDueDate(todo.dueDate);
+    var next = normalizeDueDate(state.dueDraft);
+
+    todo.dueDate = next;
+    state.editingDueId = null;
+    state.dueDraft = "";
+    persist();
+    render();
+    focusDueControl(id);
+
+    if (!next) toast("마감일을 비웠습니다");
+    else if (before === next) toast("마감일 " + dueShortLabel(next) + "(" + dueWeekday(next) + ")로 두었습니다");
+    else toast("마감일을 " + dueShortLabel(next) + "(" + dueWeekday(next) + ")로 저장했습니다");
+  }
+
+  function focusDueControl(id) {
+    if (!id) return;
+    try {
+      var items = els.list.querySelectorAll(".item");
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].getAttribute("data-id") !== id) continue;
+        var ctrl = items[i].querySelector('[data-action="due"]');
+        if (ctrl && typeof ctrl.focus === "function") ctrl.focus();
+        return;
+      }
+    } catch (e) {
+      /* 무시 */
+    }
+  }
+
+  /* 편집기 안의 빠른 선택은 화면을 다시 그리지 않고 입력값만 바꿔 포커스를 지킨다. */
+  function applyQuickToDueEditor(kind) {
+    var value = quickDate(kind);
+    state.dueDraft = value;
+    var input = null;
+    try {
+      input = els.list.querySelector("[data-due-input]");
+    } catch (e) {
+      input = null;
+    }
+    if (input) input.value = value;
+  }
+
+  function applyQuickToForm(kind) {
+    if (!els.due) return;
+    els.due.value = quickDate(kind);
+    els.due.focus();
+  }
+
+  /* ── 메모 편집 ─────────────────────────── */
+  function openMemoEditor(todo) {
+    if (!todo) return;
+    if (state.editingMemoId === todo.id) {
+      // 이미 열려 있으면 메모 버튼을 다시 눌러 닫는다.
+      closeMemoEditor();
+      return;
+    }
+    state.editingMemoId = todo.id;
+    state.memoDraft = todo.memo || "";
+    renderList();
+  }
+
+  function closeMemoEditor() {
+    if (!state.editingMemoId) return;
+    var id = state.editingMemoId;
+    state.editingMemoId = null;
+    state.memoDraft = "";
+    renderList();
+    focusNoteButton(id);
+  }
+
+  function saveMemo(id) {
+    var todo = findTodo(id);
+    if (!todo) return;
+
+    var memo = String(state.memoDraft == null ? "" : state.memoDraft)
+      .replace(/\r\n/g, "\n")
+      .trim();
+    if (memo.length > 500) memo = memo.slice(0, 500);
+
+    var hadMemo = !!todo.memo;
+    todo.memo = memo;
+
+    state.editingMemoId = null;
+    state.memoDraft = "";
+    persist();
+    render();
+    focusNoteButton(id);
+
+    if (!memo) toast("메모를 지웠습니다");
+    else if (hadMemo) toast("메모를 저장했습니다");
+    else toast("메모를 추가했습니다");
+  }
+
+  function handleListInput(event) {
+    var target = event.target;
+    if (!target || !target.getAttribute) return;
+    if (target.getAttribute("data-memo-input")) {
+      state.memoDraft = target.value;
+    }
+    if (target.getAttribute("data-due-input")) {
+      state.dueDraft = target.value || "";
+    }
+  }
+
+  /* 날짜 선택기로 고를 때는 input이 오지 않을 수 있어 change도 받는다. */
+  function handleListChange(event) {
+    var target = event.target;
+    if (!target || !target.getAttribute) return;
+    if (target.getAttribute("data-due-input")) {
+      state.dueDraft = target.value || "";
+    }
+  }
+
+  function handleListKeydown(event) {
+    var target = event.target;
+    if (!target || !target.getAttribute) return;
+
+    // 편집기 안에서: Esc 취소, Ctrl(⌘)+Enter 저장
+    if (target.getAttribute("data-memo-input")) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeMemoEditor();
+        return;
+      }
+      if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault();
+        var editingLi = target.closest ? target.closest(".item") : null;
+        if (editingLi) saveMemo(editingLi.getAttribute("data-id"));
+      }
+      return;
+    }
+
+    // 마감일 입력: Esc 취소, Enter 저장
+    if (target.getAttribute("data-due-input")) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeDueEditor();
+        return;
+      }
+      if (event.key === "Enter") {
+        event.preventDefault();
+        var dueLi = target.closest ? target.closest(".item") : null;
+        if (dueLi) saveDue(dueLi.getAttribute("data-id"));
+      }
+      return;
+    }
+
+    // 카드의 메모 블록은 버튼 역할이므로 키보드로도 열 수 있게 한다.
+    if (target.getAttribute("data-action") === "memo" &&
+        (event.key === "Enter" || event.key === " " || event.key === "Spacebar")) {
+      event.preventDefault();
+      var li = target.closest ? target.closest(".item") : null;
+      if (!li) return;
+      var todo = findTodo(li.getAttribute("data-id"));
+      if (todo) openMemoEditor(todo);
+    }
+  }
+
+  function handleListClick(event) {
+    var btn = event.target.closest ? event.target.closest("[data-action]") : null;
+    if (!btn || !els.list.contains(btn)) return;
+
+    var li = btn.closest(".item");
+    if (!li) return;
+    var id = li.getAttribute("data-id");
+    var todo = findTodo(id);
+    if (!todo) return;
+
+    var action = btn.getAttribute("data-action");
+
+    if (action === "due") {
+      openDueEditor(todo);
+      return;
+    }
+
+    if (action === "due-save") {
+      saveDue(id);
+      return;
+    }
+
+    if (action === "due-cancel") {
+      closeDueEditor();
+      return;
+    }
+
+    if (action === "due-quick") {
+      applyQuickToDueEditor(btn.getAttribute("data-due-quick"));
+      return;
+    }
+
+    if (action === "memo") {
+      // 메모 글자를 드래그해 선택하던 중이면 편집기를 열지 않는다.
+      if (btn.tagName !== "BUTTON" && hasTextSelection()) return;
+      openMemoEditor(todo);
+      return;
+    }
+
+    if (action === "memo-save") {
+      saveMemo(id);
+      return;
+    }
+
+    if (action === "memo-cancel") {
+      closeMemoEditor();
+      return;
+    }
+
+    if (action === "toggle") {
+      todo.done = !todo.done;
+      persist();
+      render();
+      if (todo.done) {
+        var left = state.todos.filter(function (t) { return !t.done; }).length;
+        if (left === 0 && state.todos.length > 0) toast("모든 할 일을 완료했습니다!");
+      }
+      return;
+    }
+
+    if (action === "delete") {
+      li.classList.add("removing");
+      window.setTimeout(function () {
+        state.todos = state.todos.filter(function (t) { return t.id !== id; });
+        persist();
+        render();
+        toast("할 일을 삭제했습니다");
+      }, 150);
+      return;
+    }
+  }
+
+  /* ── 백업 · 불러오기 ─────────────────────── */
+  var BACKUP_VERSION = 2;
+  var BACKUP_INVALID_MSG = "백업 파일을 읽을 수 없어요. JSON 형식을 확인해 주세요";
+
+  function backupFileName(date) {
+    return "todo-backup-" + date.getFullYear() + "-" + pad2(date.getMonth() + 1) +
+           "-" + pad2(date.getDate()) + ".json";
+  }
+
+  function todoForBackup(t) {
+    return {
+      id: t.id,
+      title: t.title,
+      category: t.category,
+      priority: t.priority,
+      today: !!t.today,
+      done: !!t.done,
+      memo: t.memo || "",
+      dueDate: normalizeDueDate(t.dueDate),
+      createdAt: t.createdAt
+    };
+  }
+
+  function buildBackup() {
+    return {
+      version: BACKUP_VERSION,
+      exportedAt: new Date().toISOString(),
+      todos: state.todos.map(todoForBackup)
+    };
+  }
+
+  /* 파일 저장은 브라우저·앱 환경에 따라 막힐 수 있으므로 조용히 실패하고 결과만 돌려준다. */
+  function downloadText(fileName, text) {
+    var url = "";
+    var canRevoke = false;
+
+    try {
+      if (typeof Blob === "function" && window.URL &&
+          typeof window.URL.createObjectURL === "function") {
+        url = window.URL.createObjectURL(new Blob([text], { type: "application/json" }));
+        canRevoke = !!url;
+      }
+    } catch (e) {
+      url = "";
+      canRevoke = false;
+    }
+
+    if (!url) {
+      try {
+        url = "data:application/json;charset=utf-8," + encodeURIComponent(text);
+      } catch (e) {
+        return false;
+      }
+    }
+
+    var link = null;
+    try {
+      link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", fileName);
+      link.setAttribute("rel", "noopener");
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+    } catch (e) {
+      return false;
+    } finally {
+      if (link && link.parentNode) link.parentNode.removeChild(link);
+      if (canRevoke && window.URL && typeof window.URL.revokeObjectURL === "function") {
+        var used = url;
+        window.setTimeout(function () {
+          try { window.URL.revokeObjectURL(used); } catch (e) { /* 무시 */ }
+        }, 1000);
+      }
+    }
+    return true;
+  }
+
+  function handleBackupSave() {
+    var payload = buildBackup();
+    var text;
+    try {
+      text = JSON.stringify(payload, null, 2);
+    } catch (e) {
+      toast("백업 파일을 만들지 못했어요");
+      return;
+    }
+
+    if (downloadText(backupFileName(new Date()), text)) {
+      toast("백업 파일을 저장했습니다 · 할 일 " + payload.todos.length + "개");
+    } else {
+      toast("이 환경에서는 백업 파일을 저장할 수 없어요");
+    }
+  }
+
+  function resetBackupInput() {
+    if (!els.backupFile) return;
+    // 같은 파일을 다시 골라도 change가 발생하도록 값을 비워 둔다.
+    try {
+      els.backupFile.value = "";
+    } catch (e) {
+      /* 무시 */
+    }
+  }
+
+  function handleBackupPick() {
+    if (!els.backupFile) return;
+    resetBackupInput();
+    try {
+      els.backupFile.click();
+    } catch (e) {
+      toast("파일 선택 창을 열 수 없어요");
+    }
+  }
+
+  /* { version, exportedAt, todos } 와 [ ... ] 두 형식을 모두 받아들인다. */
+  function parseBackupText(text) {
+    var data;
+    try {
+      // 메모장 등에서 저장한 파일 앞에 붙는 BOM을 걷어낸다.
+      if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+      data = JSON.parse(text);
+    } catch (e) {
+      return null;
+    }
+
+    var list = null;
+    if (Array.isArray(data)) {
+      list = data;
+    } else if (data && typeof data === "object" && Array.isArray(data.todos)) {
+      list = data.todos;
+    }
+    if (!list) return null;
+
+    var out = [];
+    var seen = {};
+    for (var i = 0; i < list.length; i++) {
+      var todo = normalizeTodo(list[i]);
+      if (!todo) continue;
+      if (seen[todo.id]) todo.id = uid();
+      seen[todo.id] = true;
+      out.push(todo);
+    }
+    return out.length ? out : null;
+  }
+
+  function resetFiltersForBackup() {
+    state.status = "all";
+    state.category = "all";
+    state.query = "";
+    var segs = document.querySelectorAll(".seg");
+    for (var i = 0; i < segs.length; i++) {
+      var on = segs[i].getAttribute("data-status") === "all";
+      segs[i].classList.toggle("active", on);
+      segs[i].setAttribute("aria-selected", on ? "true" : "false");
+    }
+    if (els.categoryFilter) els.categoryFilter.value = "all";
+    if (els.search) els.search.value = "";
+    if (els.clearSearch) els.clearSearch.classList.remove("show");
+  }
+
+  function applyBackupTodos(todos) {
+    state.todos = todos;
+    state.editingMemoId = null;
+    state.memoDraft = "";
+    state.editingDueId = null;
+    state.dueDraft = "";
+    // 불러온 항목이 필터에 가려 보이지 않도록 필터를 초기화한다.
+    resetFiltersForBackup();
+    persist();
+    render();
+    toast(todos.length + "개의 할 일을 불러왔어요");
+  }
+
+  function handleBackupText(text) {
+    var todos = parseBackupText(text);
+    if (!todos) {
+      toast(BACKUP_INVALID_MSG);
+      return;
+    }
+
+    var label = todos.length === 1 ? "1개의 할 일을" : todos.length + "개의 할 일을";
+    var ok = true;
+    try {
+      ok = window.confirm(label + " 불러올까요?\n지금 목록을 이 백업으로 바꿉니다.");
+    } catch (e) {
+      ok = true;
+    }
+    if (!ok) {
+      toast("불러오기를 취소했습니다");
+      return;
+    }
+
+    applyBackupTodos(todos);
+  }
+
+  function readBackupFile(file) {
+    var reader = null;
+    try {
+      if (typeof FileReader === "function") reader = new FileReader();
+    } catch (e) {
+      reader = null;
+    }
+    if (!reader || typeof reader.readAsText !== "function") {
+      resetBackupInput();
+      toast("이 브라우저에서는 파일을 읽을 수 없어요");
+      return;
+    }
+
+    reader.onload = function () {
+      var text = "";
+      try {
+        if (typeof reader.result === "string") text = reader.result;
+      } catch (e) {
+        text = "";
+      }
+      resetBackupInput();
+      handleBackupText(text);
+    };
+
+    reader.onerror = function () {
+      resetBackupInput();
+      toast(BACKUP_INVALID_MSG);
+    };
+
+    try {
+      reader.readAsText(file, "utf-8");
+    } catch (e) {
+      resetBackupInput();
+      toast(BACKUP_INVALID_MSG);
+    }
+  }
+
+  function handleBackupFileChange() {
+    if (!els.backupFile) return;
+    var file = null;
+    try {
+      file = els.backupFile.files && els.backupFile.files.length ? els.backupFile.files[0] : null;
+    } catch (e) {
+      file = null;
+    }
+    if (!file) {
+      resetBackupInput();
+      return;
+    }
+    readBackupFile(file);
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault();
+    var title = els.title.value.trim();
+
+    if (!title) {
+      els.formError.textContent = "할 일 제목을 입력해 주세요.";
+      els.formError.classList.add("show");
+      els.title.focus();
+      return;
+    }
+    if (title.length > 120) {
+      els.formError.textContent = "제목은 120자 이하로 입력해 주세요.";
+      els.formError.classList.add("show");
+      els.title.focus();
+      return;
+    }
+
+    els.formError.classList.remove("show");
+
+    var memoValue = els.memo ? String(els.memo.value || "").replace(/\r\n/g, "\n").trim() : "";
+    if (memoValue.length > 500) memoValue = memoValue.slice(0, 500);
+
+    var dueValue = els.due ? normalizeDueDate(els.due.value) : "";
+
+    var newId = uid();
+    state.todos.push({
+      id: newId,
+      title: title,
+      memo: memoValue,
+      category: Object.prototype.hasOwnProperty.call(CATEGORIES, els.category.value) ? els.category.value : "work",
+      priority: Object.prototype.hasOwnProperty.call(PRIORITIES, els.priority.value) ? els.priority.value : "normal",
+      today: !!els.todayToggle.checked,
+      dueDate: dueValue,
+      done: false,
+      createdAt: Date.now()
+    });
+
+    pendingNewId = newId;
+    persist();
+    render();
+
+    els.title.value = "";
+    if (els.memo) { els.memo.value = ""; }
+    if (els.due) { els.due.value = ""; }
+    els.title.focus();
+    els.todayToggle.checked = false;
+    if (dueValue && memoValue) toast("마감일 " + dueShortLabel(dueValue) + " · 메모와 함께 추가했습니다");
+    else if (dueValue) toast("마감일 " + dueShortLabel(dueValue) + "(" + dueWeekday(dueValue) + ")로 할 일을 추가했습니다");
+    else if (memoValue) toast("메모와 함께 할 일을 추가했습니다");
+    else toast("할 일을 추가했습니다");
+  }
+
+  function setStatus(next) {
+    state.status = next;
+    var segs = document.querySelectorAll(".seg");
+    for (var i = 0; i < segs.length; i++) {
+      var isOn = segs[i].getAttribute("data-status") === next;
+      segs[i].classList.toggle("active", isOn);
+      segs[i].setAttribute("aria-selected", isOn ? "true" : "false");
+    }
+    renderList();
+  }
+
+  function setupTodayHeader() {
+    var now = new Date();
+    var days = ["일", "월", "화", "수", "목", "금", "토"];
+    var y = now.getFullYear();
+    var m = now.getMonth() + 1;
+    var d = now.getDate();
+    els.todayChip.textContent = y + "년 " + m + "월 " + d + "일 (" + days[now.getDay()] + ")";
+
+    var hour = now.getHours();
+    var greeting;
+    if (hour < 5) greeting = "늦은 시간까지 수고 많아요. 남은 할 일만 가볍게 정리해 보세요.";
+    else if (hour < 12) greeting = "좋은 아침입니다. 오늘의 할 일을 정리해 보세요.";
+    else if (hour < 18) greeting = "오후입니다. 남은 할 일을 확인해 보세요.";
+    else greeting = "오늘 하루도 수고하셨어요. 남은 할 일을 정리해 보세요.";
+    els.subLine.textContent = greeting;
+  }
+
+  /* ── 17:00 데드라인 · 알람 ──────────────── */
+  var alarmAnimTimer = null;
+  var deadlineLoopTimer = null;
+  var audioCtx = null;
+
+  function pad2(n) {
+    return n < 10 ? "0" + n : String(n);
+  }
+
+  function dateKey(date) {
+    return date.getFullYear() + "-" + pad2(date.getMonth() + 1) + "-" + pad2(date.getDate());
+  }
+
+  /* 저장소는 막혀 있을 수 있으므로 알람 설정도 조용히 실패한다. */
+  function readPref(key) {
+    try {
+      return window.localStorage.getItem(key);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function writePref(key, value) {
+    try {
+      window.localStorage.setItem(key, value);
+    } catch (e) {
+      /* 저장 공간이 없거나 차단된 경우 무시 */
+    }
+  }
+
+  function readAlarmEnabled() {
+    var raw = readPref(ALARM_KEY);
+    // 저장된 값이 없으면 알람은 켜진 상태로 시작한다.
+    if (raw === "off") return false;
+    return true;
+  }
+
+  function readAlarmFired() {
+    var raw = readPref(ALARM_FIRED_KEY);
+    return typeof raw === "string" && raw ? raw : null;
+  }
+
+  function todayTodos(mode) {
+    return state.todos.filter(function (t) {
+      if (!isTodayTask(t)) return false;
+      if (mode === "open") return !t.done;
+      return true;
+    });
+  }
+
+  function deadlineInfo(now) {
+    var all = todayTodos();
+    var open = todayTodos("open");
+    var deadline = new Date(now.getFullYear(), now.getMonth(), now.getDate(),
+                           DEADLINE_HOUR, DEADLINE_MINUTE, 0, 0);
+    var remaining = deadline.getTime() - now.getTime();
+    var phase;
+    if (all.length === 0) phase = "none";
+    else if (open.length === 0) phase = "done";
+    else if (remaining > 0) phase = "upcoming";
+    else phase = "overdue";
+    return {
+      phase: phase,
+      total: all.length,
+      open: open.length,
+      remaining: remaining,
+      key: dateKey(now)
+    };
+  }
+
+  function remainingText(ms) {
+    var totalMin = Math.ceil(ms / 60000);
+    if (totalMin < 0) totalMin = 0;
+    var hours = Math.floor(totalMin / 60);
+    var mins = totalMin % 60;
+    if (hours > 0 && mins > 0) return hours + "시간 " + mins + "분";
+    if (hours > 0) return hours + "시간";
+    return mins + "분";
+  }
+
+  function renderDeadline() {
+    if (!els.deadline) return;
+    var info = deadlineInfo(new Date());
+    var late = countLateOpen();
+    var lateNote = late > 0 ? " · 마감 지난 할 일 " + late + "개" : "";
+    var title;
+    var desc;
+
+    if (info.phase === "overdue") {
+      title = "⏰ 오후 5시 데드라인이 지났어요! 남은 오늘 할 일 " + info.open + "개";
+      var lateMin = Math.ceil(-info.remaining / 60000);
+      desc = lateMin <= 0
+        ? "마감 시각(17:00)이 되었어요. 남은 일부터 마무리해 보세요."
+        : "마감 시각(17:00)이 " + remainingText(-info.remaining) + " 지났어요. 남은 일부터 마무리해 보세요.";
+      desc += lateNote;
+    } else if (info.phase === "upcoming") {
+      title = "오늘 마감 17:00";
+      desc = "마감까지 " + remainingText(info.remaining) + " · 남은 오늘 할 일 " + info.open + "개" + lateNote;
+    } else if (info.phase === "done") {
+      title = "오늘 마감 17:00";
+      desc = "✅ 오늘 할 일 " + info.total + "개를 모두 마쳤어요." + lateNote;
+    } else {
+      title = "오늘 마감 17:00";
+      desc = "오늘로 표시된 할 일이 없어요. 여유 있는 하루 보내세요." + lateNote;
+    }
+
+    els.deadline.setAttribute("data-state", info.phase);
+    if (els.deadlineTitle) els.deadlineTitle.textContent = title;
+    if (els.deadlineDesc) els.deadlineDesc.textContent = desc;
+
+    // 오늘 할 일을 모두 마치면 강조 배너를 내린다.
+    if (info.phase !== "overdue") els.deadline.classList.remove("firing");
+
+    if (els.alarmToggle) {
+      els.alarmToggle.textContent = state.alarm.enabled ? "🔔 17:00 알람 켜짐" : "🔕 17:00 알람 꺼짐";
+      els.alarmToggle.setAttribute("aria-pressed", state.alarm.enabled ? "true" : "false");
+      els.alarmToggle.classList.toggle("on", !!state.alarm.enabled);
+    }
+  }
+
+  /* ── 알림(Notification) ─────────────────── */
+  function notificationAPI() {
+    try {
+      if (typeof Notification !== "undefined" && Notification) return Notification;
+      if (window && window.Notification) return window.Notification;
+    } catch (e) {
+      /* 미지원 환경 */
+    }
+    return null;
+  }
+
+  function afterPermission(perm) {
+    if (perm === "granted") toast("브라우저 알림도 함께 켰습니다");
+    else if (perm === "denied") toast("브라우저 알림은 꺼졌지만 화면 알람은 울립니다");
+  }
+
+  function requestNotifyPermission() {
+    var N = notificationAPI();
+    if (!N || typeof N.requestPermission !== "function") return false;
+    try {
+      if (N.permission === "granted" || N.permission === "denied") return false;
+      var result = N.requestPermission(function (perm) { afterPermission(perm); });
+      if (result && typeof result.then === "function") {
+        result.then(function (perm) { afterPermission(perm); }, function () {});
+      }
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function sendNotification(title, body) {
+    var N = notificationAPI();
+    if (!N || typeof N !== "function") return false;
+    try {
+      if (N.permission !== "granted") return false;
+      var note = new N(title, { body: body, tag: "todo-deadline-17", lang: "ko" });
+      if (note && typeof note.close === "function") {
+        window.setTimeout(function () {
+          try { note.close(); } catch (e) { /* 무시 */ }
+        }, 15000);
+      }
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /* ── 알람음(Web Audio, 외부 파일 없음) ──── */
+  function audioContext() {
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      if (!audioCtx) audioCtx = new AC();
+      if (audioCtx.state === "suspended" && typeof audioCtx.resume === "function") {
+        try { audioCtx.resume(); } catch (e) { /* 제스처 전이면 무시 */ }
+      }
+      return audioCtx;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function scheduleTone(ctx, freq, startAt, length, peak) {
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    gain.gain.value = 0.0001;
+    gain.gain.setValueAtTime(0.0001, startAt);
+    gain.gain.exponentialRampToValueAtTime(peak, startAt + 0.05);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startAt + length);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(startAt);
+    osc.stop(startAt + length + 0.05);
+  }
+
+  // G5 · B5 · D6 세 음을 살짝 겹쳐 부드러운 차임벨을 만든다.
+  function playChime() {
+    var ctx = audioContext();
+    if (!ctx || typeof ctx.createOscillator !== "function" || typeof ctx.createGain !== "function") {
+      return false;
+    }
+    try {
+      var t0 = typeof ctx.currentTime === "number" ? ctx.currentTime : 0;
+      var notes = [784.00, 987.77, 1174.66];
+      for (var i = 0; i < notes.length; i++) {
+        var startAt = t0 + i * 0.22;
+        scheduleTone(ctx, notes[i], startAt, 1.1, 0.14);
+        scheduleTone(ctx, notes[i] * 2, startAt, 0.55, 0.03);
+      }
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /* ── 알람 동작 ─────────────────────────── */
+  function fireAlarm(info) {
+    if (!els.deadline) return;
+    els.deadline.classList.add("firing");
+    if (alarmAnimTimer) window.clearTimeout(alarmAnimTimer);
+    alarmAnimTimer = window.setTimeout(function () {
+      if (els.deadline) els.deadline.classList.remove("firing");
+    }, 9000);
+
+    playChime();
+    sendNotification("⏰ 오후 5시 데드라인", "남은 오늘 할 일 " + info.open + "개가 있어요.");
+    toast("⏰ 오후 5시 데드라인 · 남은 오늘 할 일 " + info.open + "개");
+  }
+
+  function checkDeadlineAlarm() {
+    if (!state.alarm || !state.alarm.enabled) return false;
+    var info = deadlineInfo(new Date());
+    if (info.phase !== "overdue" || info.open <= 0) return false;
+    if (state.alarm.lastFired === info.key) return false;
+    state.alarm.lastFired = info.key;
+    writePref(ALARM_FIRED_KEY, info.key);
+    fireAlarm(info);
+    return true;
+  }
+
+  function setAlarmEnabled(on) {
+    state.alarm.enabled = !!on;
+    writePref(ALARM_KEY, on ? "on" : "off");
+    if (on) requestNotifyPermission();
+    toast(on ? "17:00 알람을 켰습니다" : "17:00 알람을 껐습니다");
+    renderDeadline();
+  }
+
+  function runAlarmTest() {
+    var played = playChime();
+    var notified = sendNotification("🔔 테스트 알람", "오후 5시 데드라인 알람 미리듣기입니다.");
+    if (els.deadline) {
+      els.deadline.classList.add("firing");
+      if (alarmAnimTimer) window.clearTimeout(alarmAnimTimer);
+      alarmAnimTimer = window.setTimeout(function () {
+        if (els.deadline) els.deadline.classList.remove("firing");
+      }, 3000);
+    }
+    toast(played ? "테스트 알람을 재생했습니다" : "이 환경에서는 알람음을 재생할 수 없어요");
+    return played ? (notified ? "sound+notification" : "sound") : "none";
+  }
+
+  function startDeadlineLoop() {
+    if (deadlineLoopTimer || typeof window.setInterval !== "function") return;
+    deadlineLoopTimer = window.setInterval(function () {
+      renderDeadline();
+      checkDeadlineAlarm();
+    }, 30000);
+  }
+
+  function init() {
+    setupTodayHeader();
+
+    state.alarm.enabled = readAlarmEnabled();
+    state.alarm.lastFired = readAlarmFired();
+
+    state.todos = loadTodos();
+    if (!storageOK) {
+      // 저장이 막힌 환경에서도 화면은 동작하도록
+      saveTodos = function () {};
+    }
+
+    els.form.addEventListener("submit", handleSubmit);
+
+    els.title.addEventListener("input", function () {
+      if (els.title.value.trim()) els.formError.classList.remove("show");
+    });
+
+    // 추가 폼의 마감일 빠른 선택(오늘·내일·1주 뒤·비우기)
+    var quickBtns = document.querySelectorAll("#add-form [data-quick]");
+    for (var q = 0; q < quickBtns.length; q++) {
+      quickBtns[q].addEventListener("click", function (e) {
+        applyQuickToForm(e.currentTarget.getAttribute("data-quick"));
+      });
+    }
+
+    els.list.addEventListener("click", handleListClick);
+    els.list.addEventListener("input", handleListInput);
+    els.list.addEventListener("change", handleListChange);
+    els.list.addEventListener("keydown", handleListKeydown);
+
+    var segs = document.querySelectorAll(".seg");
+    for (var i = 0; i < segs.length; i++) {
+      segs[i].addEventListener("click", function (e) {
+        setStatus(e.currentTarget.getAttribute("data-status"));
+      });
+    }
+
+    els.categoryFilter.addEventListener("change", function () {
+      state.category = els.categoryFilter.value;
+      renderList();
+    });
+
+    els.search.addEventListener("input", function () {
+      state.query = els.search.value;
+      els.clearSearch.classList.toggle("show", state.query.length > 0);
+      renderList();
+    });
+
+    els.clearSearch.addEventListener("click", function () {
+      els.search.value = "";
+      state.query = "";
+      els.clearSearch.classList.remove("show");
+      renderList();
+      els.search.focus();
+    });
+
+    els.clearDone.addEventListener("click", function () {
+      var doneCount = state.todos.filter(function (t) { return t.done; }).length;
+      if (doneCount === 0) return;
+      var label = doneCount === 1 ? "완료된 할 일 1개를" : "완료된 할 일 " + doneCount + "개를";
+      if (!window.confirm(label + " 목록에서 지울까요? 되돌릴 수 없습니다.")) return;
+      state.todos = state.todos.filter(function (t) { return !t.done; });
+      persist();
+      render();
+      toast("완료 항목을 정리했습니다");
+    });
+
+    if (els.backupSave) {
+      els.backupSave.addEventListener("click", handleBackupSave);
+    }
+
+    if (els.backupLoad) {
+      els.backupLoad.addEventListener("click", handleBackupPick);
+    }
+
+    if (els.backupFile) {
+      els.backupFile.addEventListener("change", handleBackupFileChange);
+    }
+
+    if (els.alarmToggle) {
+      els.alarmToggle.addEventListener("click", function () {
+        setAlarmEnabled(!state.alarm.enabled);
+      });
+    }
+
+    if (els.alarmTest) {
+      els.alarmTest.addEventListener("click", function () {
+        runAlarmTest();
+      });
+    }
+
+    render();
+    startDeadlineLoop();
+    checkDeadlineAlarm();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();
+</script>
+</body>
+</html>
